@@ -45,6 +45,16 @@ import {
 import { compactAnswerForModel, type QuestionAnswerData } from "./question-core.ts";
 import { activeCompactionOf, keptIndexFor } from "./compaction.ts";
 
+/** 8 random hex chars (the old randomUUID().slice(0, 8) format). Uses
+ *  getRandomValues, which browsers allow on plain http too; randomUUID
+ *  exists only in secure contexts (https or localhost), so it broke sends
+ *  from another machine over http (fork, 2026-10-24). */
+function randomHex8(): string {
+	const bytes = new Uint8Array(4);
+	crypto.getRandomValues(bytes);
+	return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 /** The hard-invariant wording for an aborted turn's unanswered calls —
  *  carried over verbatim from the pre-native era so the model's view
  *  never drifted. */
@@ -102,7 +112,7 @@ export function asAgentMessages(messages: readonly LhMessage[]): AgentMessage[] 
 
 /** The app-wide message id shape (same as the UIMessage-era mint). */
 export function newMessageId(): string {
-	return `msg_${Date.now().toString(36)}_${crypto.randomUUID().slice(0, 8)}`;
+	return `msg_${Date.now().toString(36)}_${randomHex8()}`;
 }
 
 // ─── constructors (the input-event → native append mapping lives in
@@ -174,7 +184,7 @@ export function newPlanBlockMessage(
 	block: unknown,
 ): LhMarkerMessage {
 	return {
-		id: `pb_${Date.now().toString(36)}_${crypto.randomUUID().slice(0, 8)}`,
+		id: `pb_${Date.now().toString(36)}_${randomHex8()}`,
 		role: "custom",
 		customType: "plan-block",
 		content: "",
