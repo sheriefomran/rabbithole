@@ -12,6 +12,7 @@ import type { ThinkingLevel } from "@earendil-works/pi-agent-core";
 import { type ModelRole } from "../../config.ts";
 import { DEFAULT_THINKING_ORDER } from "../core/settings.ts";
 import packageMetadata from "../../package.json" with { type: "json" };
+import { claudeCodeProvider } from "./claude-code.ts";
 
 /** App identity is immutable and shared by Models and every native Agent.
  * Agent's default Pi attribution otherwise overrides the Models identity. */
@@ -57,6 +58,9 @@ export function piModels() {
 	if (!collection) {
 		collection = createModels({ identity: APP_IDENTITY });
 		for (const provider of builtinProviders()) collection.setProvider(provider);
+		// The keyless claude-code provider (src/agent/claude-code.ts): runs
+		// the local Claude Code CLI on its own subscription login.
+		collection.setProvider(claudeCodeProvider());
 	}
 	return collection;
 }

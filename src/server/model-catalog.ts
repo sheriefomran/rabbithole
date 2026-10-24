@@ -20,6 +20,7 @@
 import { clampThinkingLevel, getSupportedThinkingLevels, type Api, type Model } from "@earendil-works/pi-ai";
 import type { ThinkingLevel } from "@earendil-works/pi-agent-core";
 import { piModels } from "../agent/models.ts";
+import { CLAUDE_CODE_PROVIDER_ID } from "../agent/claude-code.ts";
 import { settingsStore } from "../store/settings.ts";
 import { effectiveSettings } from "./stores.ts";
 import { keyValue } from "./keys.ts";
@@ -121,11 +122,16 @@ export function catalogSlots(): SlotPins {
  *  with keyPresent read env-wins through the keys seam, fresh per call —
  *  saving a key immediately federates the provider into the picker. */
 export function catalogProviders(): CatalogProvider[] {
-	return AUTH_PROVIDER_KEYS.map((p) => ({
-		id: p.id,
-		envVar: p.envVar,
-		keyPresent: keyValue(p.envVar) !== undefined,
-	})).sort((a, b) => a.id.localeCompare(b.id));
+	return [
+		...AUTH_PROVIDER_KEYS.map((p) => ({
+			id: p.id,
+			envVar: p.envVar,
+			keyPresent: keyValue(p.envVar) !== undefined,
+		})),
+		// The claude-code provider needs no key (the local Claude Code CLI
+		// holds its own login), so it is always federated in.
+		{ id: CLAUDE_CODE_PROVIDER_ID, envVar: "", keyPresent: true },
+	].sort((a, b) => a.id.localeCompare(b.id));
 }
 
 /** The providers whose key is present — the picker federates exactly
