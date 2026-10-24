@@ -304,3 +304,21 @@ describe("streamClaudeCode (fake claude)", () => {
 		}
 	});
 });
+
+// ─── the zero-keys gates with a keyless provider (fork) ─────────────────────
+
+import { hasKeylessProvider } from "../components/setup-cta.tsx";
+import type { ModelCatalogResponse } from "../src/core/index.ts";
+
+describe("hasKeylessProvider", () => {
+	const cat = (providers: { id: string; envVar: string; keyPresent: boolean }[]) =>
+		({ models: [], defaults: {}, rolePins: {}, slots: {}, providers }) as unknown as ModelCatalogResponse;
+	test("the claude-code provider (no envVar, always present) counts", () => {
+		assert.equal(hasKeylessProvider(cat([{ id: "claude-code", envVar: "", keyPresent: true }])), true);
+	});
+	test("keyed providers never count, present or not; a loading catalog never counts", () => {
+		assert.equal(hasKeylessProvider(cat([{ id: "openrouter", envVar: "OPENROUTER_API_KEY", keyPresent: true }])), false);
+		assert.equal(hasKeylessProvider(cat([{ id: "anthropic", envVar: "ANTHROPIC_API_KEY", keyPresent: false }])), false);
+		assert.equal(hasKeylessProvider(undefined), false);
+	});
+});

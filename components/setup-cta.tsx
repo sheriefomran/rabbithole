@@ -34,6 +34,14 @@ export function hasProviderKey(
 	return classifyKeys(statuses, providers).providerRows.some((s) => s.present);
 }
 
+/** Pure (fork, claude-code engine): does the catalog federate a provider
+ *  that needs no key at all? Such a provider has an empty envVar and is
+ *  always keyPresent, so it unlocks models with zero keys stored. False
+ *  while the catalog is still loading. Exported for pins. */
+export function hasKeylessProvider(catalog: ModelCatalogResponse | undefined): boolean {
+	return !!catalog?.providers.some((p) => p.keyPresent && !p.envVar);
+}
+
 /** The zero-keys truth for the calling page: TRUE only after a
  *  successful read says no provider key exists (pending and failed
  *  reads render nothing — the pill must never flash on a gap, and a
@@ -41,6 +49,9 @@ export function hasProviderKey(
  *  leans on). Re-reads on the keys signal. */
 export function useZeroKeys(): boolean {
 	const [zeroKeys, setZeroKeys] = useState(false);
+	// Fork: a keyless provider (claude-code) unlocks models with no key, so
+	// the pill and the pre-send key guard must not fire while it is there.
+	const { catalog } = useModelCatalog();
 	const read = useCallback(() => {
 		fetch("/api/keys")
 			.then((r) => r.json())
@@ -55,7 +66,7 @@ export function useZeroKeys(): boolean {
 	useSettingsSaved((section) => {
 		if (section === "keys") read();
 	});
-	return zeroKeys;
+	return zeroKeys && catalog !== undefined && !hasKeylessProvider(catalog);
 }
 
 /** The pill itself — the models CTA's chrome and placement, the keys
