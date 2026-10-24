@@ -64,8 +64,10 @@ export function claudeCodeModels(): Model<typeof CLAUDE_CODE_API>[] {
 		api: CLAUDE_CODE_API,
 		provider: CLAUDE_CODE_PROVIDER_ID,
 		baseUrl: "local:claude-cli",
-		// No thinking ladder: the CLI picks its own effort; "off" is honest.
-		reasoning: false,
+		// The thinking ladder maps onto the CLI's --effort levels. Claude Code
+		// has no "off" or "minimal", so those are not offered.
+		reasoning: true,
+		thinkingLevelMap: { off: null, minimal: null, low: "low", medium: "medium", high: "high", xhigh: "xhigh", max: "max" },
 		input: ["text", "image"],
 		// On the subscription: no per-token charge.
 		cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
@@ -273,11 +275,12 @@ export function claudeBin(): string {
 }
 
 /** The CLI flags for one headless run (no prompt text, no secrets). */
-export function claudeArgs(modelId: string, systemPromptFile: string): string[] {
+export function claudeArgs(modelId: string, systemPromptFile: string, effort?: string): string[] {
 	return [
 		"-p",
 		"--model",
 		modelId,
+		...(effort ? ["--effort", effort] : []),
 		"--system-prompt-file",
 		systemPromptFile,
 		"--tools",
@@ -359,7 +362,9 @@ export function streamClaudeCode(
 			dir = fs.mkdtempSync(path.join(os.tmpdir(), "lh-claude-code-"));
 			const sysFile = path.join(dir, "system-prompt.md");
 			fs.writeFileSync(sysFile, prompt.system);
-			const args = claudeArgs(model.id, sysFile);
+			const level = options?.reasoning;
+			const mapped = level ? model.thinkingLevelMap?.[level] : undefined;
+			const args = claudeArgs(model.id, sysFile, typeof mapped === "string" ? mapped : undefined);
 			const bin = claudeBin();
 			if (process.env.NODE_ENV !== "test")
 				console.info(`[claude-code] ${bin} ${args.map((a) => (a === "" ? '""' : a)).join(" ")} (cwd ${dir})`);

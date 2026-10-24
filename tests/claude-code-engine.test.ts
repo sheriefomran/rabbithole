@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { normalizeContext, type AssistantMessage, type Context, type Tool } from "@earendil-works/pi-ai";
+import { getSupportedThinkingLevels, normalizeContext, type AssistantMessage, type Context, type Tool } from "@earendil-works/pi-ai";
 import {
 	buildClaudeCodePrompt,
 	claudeArgs,
@@ -177,6 +177,14 @@ describe("catalog", () => {
 		assert.equal(args[args.indexOf("--tools") + 1], "");
 		assert.equal(args[args.indexOf("--setting-sources") + 1], "");
 		for (const f of ["--strict-mcp-config", "--no-session-persistence", "--disable-slash-commands"]) assert.ok(args.includes(f), f);
+		assert.ok(!args.includes("--effort"));
+	});
+
+	test("the app's thinking level becomes the CLI's --effort", () => {
+		const args = claudeArgs("opus", "/tmp/s.md", "high");
+		assert.equal(args[args.indexOf("--effort") + 1], "high");
+		const model = piModels().getModel("claude-code", "opus")!;
+		assert.deepEqual(getSupportedThinkingLevels(model), ["low", "medium", "high", "xhigh", "max"]);
 	});
 });
 
